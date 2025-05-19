@@ -1,0 +1,23 @@
+[package]
+name = "quic_chat_server"
+version = "0.1.0"
+edition = "2021"
+default-run = "quic_chat_server"  # 添加这一行
+
+[dependencies]
+quinn = "0.10"          # QUIC实现
+tokio = { version = "1.0", features = ["full"] }  # 异步运行时
+serde = { version = "1.0", features = ["derive"] }  # 序列化
+serde_json = "1.0"      # JSON处理
+futures = "0.3"         # 异步流处理
+tracing = "0.1"         # 日志记录
+tracing-subscriber = "0.3"
+anyhow = "1.0"          # 错误处理
+arc-swap = "1.5"        # 线程安全的状态共享
+dashmap = "5.4"         # 并发HashMap
+tokio-tungstenite = "0.20"  # WebSocket支持
+rcgen = { version = "0.11", features = ["pem"] }
+rustls = "0.21"
+rustls-pemfile = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+warp = "0.3"

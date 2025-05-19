@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>简易聊天室</title>
+    <style>
+      #chat {
+        height: 300px;
+        border: 1px solid #ccc;
+        overflow-y: scroll;
+        padding: 10px;
+        margin-bottom: 10px;
+      }
+      input[type="text"] {
+        width: 200px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>简易聊天室</h2>
+    <div id="chat"></div>
+    <input type="text" id="username" placeholder="用户名" />
+    <input type="text" id="message" placeholder="输入消息..." />
+    <button onclick="sendMessage()">发送</button>
+
+    <script>
+      const chat = document.getElementById("chat");
+      let ws;
+
+      function connect() {
+        ws = new WebSocket("wss://localhost:4433/ws"); // 注意这里的URL需要根据你的配置进行修改
+        ws.onmessage = function (event) {
+          logMessage(event.data);
+        };
+      }
+
+      function logMessage(text) {
+        const div = document.createElement("div");
+        div.textContent = text;
+        chat.appendChild(div);
+        chat.scrollTop = chat.scrollHeight;
+      }
+
+      function sendMessage() {
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+          alert("连接未建立，请稍后再试");
+          return;
+        }
+        const username = document.getElementById("username").value;
+        const message = document.getElementById("message").value;
+        if (username && message) {
+          ws.send(JSON.stringify({ username, message }));
+          document.getElementById("message").value = "";
+        } else {
+          alert("请输入用户名和消息");
+        }
+      }
+
+      window.onload = connect;
+    </script>
+  </body>
+</html>
