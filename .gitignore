@@ -29,3 +29,11 @@ cert.der
 key.der
 cert.pem
 key.pem
+
+# 证书文件
+*.der
+*.pem
+*.key
+
+# 日志
+*.log

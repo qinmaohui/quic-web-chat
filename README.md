@@ -42,6 +42,12 @@ cargo run --bin generate_cert
 cargo run
 ```
 
+### 运行客户端
+
+```bash
+cargo run --bin chat_client
+```
+
 ### 运行前端
 
 ```bash

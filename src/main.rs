@@ -5,6 +5,7 @@ use chat::ChatMessage;
 use warp::Filter;
 use futures::{StreamExt, SinkExt};
 use tokio::sync::mpsc;
+use tokio::io::AsyncWriteExt;
 
 mod chat;
 
@@ -159,7 +160,7 @@ async fn handle_connection(
 }
 
 async fn handle_stream(
-    _send: &mut quinn::SendStream,
+    send: &mut quinn::SendStream,
     recv: &mut quinn::RecvStream,
     chat_state: Arc<chat::ChatState>,
 ) -> Result<()> {
@@ -178,16 +179,39 @@ async fn handle_stream(
         
         chat_state.broadcast_message(message);
         
-        while let Ok(n) = recv.read(&mut buf).await {
-            if let Some(n) = n {
-                let content = String::from_utf8_lossy(&buf[..n]).to_string();
-                let message = ChatMessage {
-                    username: username.clone(),
-                    content,
-                    timestamp: chrono::Utc::now(),
-                };
-                
-                chat_state.broadcast_message(message);
+        // 创建一个新的接收器来接收广播消息
+        let mut rx = chat_state.subscribe();
+        
+        // 使用 tokio::select! 来处理消息接收和广播
+        loop {
+            tokio::select! {
+                // 处理广播消息
+                Ok(msg) = rx.recv() => {
+                    let msg_str = serde_json::to_string(&msg).unwrap() + "\n";
+                    if let Err(e) = send.write_all(msg_str.as_bytes()).await {
+                        tracing::error!("发送广播消息失败: {:?}", e);
+                        break;
+                    }
+                    if let Err(e) = send.flush().await {
+                        tracing::error!("刷新广播消息失败: {:?}", e);
+                        break;
+                    }
+                }
+                // 处理用户输入
+                Ok(n) = recv.read(&mut buf) => {
+                    if let Some(n) = n {
+                        let content = String::from_utf8_lossy(&buf[..n]).to_string();
+                        let message = ChatMessage {
+                            username: username.clone(),
+                            content,
+                            timestamp: chrono::Utc::now(),
+                        };
+                        chat_state.broadcast_message(message);
+                    } else {
+                        break;
+                    }
+                }
+                else => break,
             }
         }
         
